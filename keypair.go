@@ -6,6 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"bufio"
+	"os"
+	"regexp"
+	"strings"
 
 	"github.com/btcsuite/btcec"
 	"github.com/btcsuite/btcnet"
@@ -50,11 +54,38 @@ func generateAddr(pub *btcec.PublicKey) *btcutil.AddressPubKeyHash {
 	return addr
 }
 
-func main() {
-
-	// In order to recieve coins we must generate a public/private key pair.
+func generateVanityAddress(pattern string) (*btcec.PublicKey, *btcec.PrivateKey) {
 	pub, priv := generateKeyPair()
+	r, err := regexp.Compile(pattern)
+	for {
+		if r.MatchString(generateAddr(pub).String()) {
+			break
+		}
+		pub, priv = generateKeyPair()
+	}
+	return pub, priv
+}
 
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter pattern, or nothing for non-vanity address: ")
+	text, _ := reader.ReadString('\n')
+	pub, priv := generateKeyPair()
+	text = strings.TrimSpace(text)
+	if(len(text) != 0) {
+		pub, priv = generateKeyPair()
+		r, err := regexp.Compile(text)
+		if err != nil {
+			fmt.Print("Invalid regex, generating non-vanity address instead.")
+		}
+		fmt.Printf("Searching...\n")
+		for {
+			if r.MatchString(generateAddr(pub).String()) {
+				break
+			}
+			pub, priv = generateKeyPair()
+		}
+	}
 	// To use this address we must store our private key somewhere. Everything
 	// else can be recovered from the private key.
 	fmt.Printf("This is a private key in hex:\t[%s]\n",
