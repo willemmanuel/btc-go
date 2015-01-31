@@ -57,6 +57,9 @@ func generateAddr(pub *btcec.PublicKey) *btcutil.AddressPubKeyHash {
 func generateVanityAddress(pattern string) (*btcec.PublicKey, *btcec.PrivateKey) {
 	pub, priv := generateKeyPair()
 	r, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, nil
+	}
 	for {
 		if r.MatchString(generateAddr(pub).String()) {
 			break
